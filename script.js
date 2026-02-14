@@ -343,11 +343,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (keySequence.length > 5) keySequence = keySequence.slice(-5);
     });
 
-    checkButton.addEventListener('click', checkCompletion);
-    submitButton.addEventListener('click', submitPuzzle);
-    restartButton.addEventListener('click', () => location.reload());
-    homeButton.addEventListener('click', () => { window.location.href = 'index.html'; });
-    incompleteOkButton.addEventListener('click', () => incompleteOverlay.classList.add('hidden'));
+    if (checkButton) checkButton.addEventListener('click', checkCompletion);
+    if (submitButton) submitButton.addEventListener('click', submitPuzzle);
+    if (restartButton) restartButton.addEventListener('click', () => location.reload());
+    if (homeButton) homeButton.addEventListener('click', () => { window.location.href = 'index.html'; });
+    if (incompleteOkButton) incompleteOkButton.addEventListener('click', () => incompleteOverlay.classList.add('hidden'));
     
     // Start Game
     startGame();
