@@ -32,51 +32,60 @@
                 }
                 .how-to-step {
                     display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    margin-bottom: 12px;
+                    align-items: flex-start;
+                    gap: 18px;
+                    margin-bottom: 28px;
+                    font-size: 1.25rem;
                 }
                 .how-to-step-num {
-                    border: 2px solid var(--accent-color);
+                    border: 2.5px solid var(--accent-color);
                     border-radius: 50%;
-                    width: 32px;
-                    height: 32px;
+                    width: 40px;
+                    height: 40px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-family: 'Bungee', cursive;
-                    font-size: 1.3rem;
+                    font-size: 1.5rem;
                     color: var(--accent-color);
-                    background: transparent;
+                    background: #101c1c;
+                    box-shadow: 0 2px 8px rgba(3,218,198,0.10);
                 }
                 .how-to-step-text {
                     font-family: 'Roboto Mono', monospace;
-                    font-size: 1.1rem;
+                    font-size: 1.15rem;
                     color: var(--accent-color);
+                    line-height: 1.7;
                 }
                 .how-to-grid-demo {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    margin-bottom: 18px;
+                    margin: 18px 0 28px 0;
+                    background: rgba(3,218,198,0.07);
+                    border-radius: 12px;
+                    padding: 18px 28px 12px 28px;
+                    box-shadow: 0 2px 16px rgba(3,218,198,0.08);
                 }
                 .how-to-grid-row {
                     display: flex;
                 }
                 .how-to-grid-cell {
-                    width: 32px;
-                    height: 32px;
-                    margin: 2px;
-                    background: rgba(42,42,42,0.225);
-                    border: 1px solid rgba(68,68,68,0.3);
+                    width: 38px;
+                    height: 38px;
+                    margin: 3px;
+                    background: #101c1c;
+                    border: 2px solid var(--accent-color);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-family: 'Roboto Mono', monospace;
                     font-weight: bold;
                     color: var(--accent-color);
-                    font-size: 1.1em;
-                    border-radius: 6px;
+                    font-size: 1.35em;
+                    border-radius: 8px;
+                    box-shadow: 0 1px 6px rgba(3,218,198,0.10);
+                    transition: background 0.2s;
                 }
                 .how-to-check-btn {
                     background: var(--accent-color);
