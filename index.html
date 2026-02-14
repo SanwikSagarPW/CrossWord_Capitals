@@ -403,7 +403,7 @@
         const howToBtn = document.getElementById('howToBtn');
         const howToPopup = document.getElementById('howToPopup');
         const backBtn = document.getElementById('backBtn');
-        const howToPlayImg = document.getElementById('howToPlayImg');
+        // Removed: const howToPlayImg = document.getElementById('howToPlayImg');
         const bgAnimation = document.getElementById('bgAnimation');
         const bgMusic = document.getElementById('bgMusic');
         const musicControl = document.getElementById('musicControl');
@@ -553,7 +553,7 @@
         startWordAnimation();
 
         // Event Listeners
-        howToPlayImg.addEventListener('error', function() { this.style.display = 'none'; });
+        // Removed: howToPlayImg.addEventListener('error', function() { this.style.display = 'none'; });
         playBtn.addEventListener('click', () => { window.location.href = 'game.html'; });
         howToBtn.addEventListener('click', () => {
             howToPopup.classList.add('active');
