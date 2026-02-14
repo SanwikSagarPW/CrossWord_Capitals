@@ -8,6 +8,92 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Bungee&display=swap" rel="stylesheet">
     <style>
+                /* How to Play Popup Styles */
+                .how-to-title-row {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 24px;
+                }
+                .how-to-title-box {
+                    border: 2px solid var(--accent-color);
+                    border-radius: 8px;
+                    padding: 4px 16px;
+                    font-family: 'Bungee', cursive;
+                    font-size: 2.2rem;
+                    color: var(--accent-color);
+                    background: transparent;
+                }
+                .how-to-title-text {
+                    font-family: 'Bungee', cursive;
+                    font-size: 2.2rem;
+                    color: #fff;
+                }
+                .how-to-step {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 12px;
+                }
+                .how-to-step-num {
+                    border: 2px solid var(--accent-color);
+                    border-radius: 50%;
+                    width: 32px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: 'Bungee', cursive;
+                    font-size: 1.3rem;
+                    color: var(--accent-color);
+                    background: transparent;
+                }
+                .how-to-step-text {
+                    font-family: 'Roboto Mono', monospace;
+                    font-size: 1.1rem;
+                    color: var(--accent-color);
+                }
+                .how-to-grid-demo {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    margin-bottom: 18px;
+                }
+                .how-to-grid-row {
+                    display: flex;
+                }
+                .how-to-grid-cell {
+                    width: 32px;
+                    height: 32px;
+                    margin: 2px;
+                    background: rgba(42,42,42,0.225);
+                    border: 1px solid rgba(68,68,68,0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: 'Roboto Mono', monospace;
+                    font-weight: bold;
+                    color: var(--accent-color);
+                    font-size: 1.1em;
+                    border-radius: 6px;
+                }
+                .how-to-check-btn {
+                    background: var(--accent-color);
+                    color: var(--background-color);
+                    border: none;
+                    border-radius: 8px;
+                    padding: 12px 32px;
+                    font-family: 'Roboto Mono', monospace;
+                    font-size: 1.1rem;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 2px 8px rgba(3,218,198,0.12);
+                    margin-bottom: 12px;
+                }
+                .how-to-check-btn:hover {
+                    background: var(--button-hover);
+                }
         :root {
             --background-color: #121212;
             --card-background: #1d1d1d;
@@ -248,7 +334,7 @@
                 <span class="title-part-1">Cross</span><span class="title-part-2">word</span>
             </div>
             <!-- Subtitle will be loaded from puzzle.json -->
-            <p id="puzzle-subtitle" class="puzzle-subtitle">Loading Theme...</p>
+            <p id="puzzle-subtitle" class="puzzle-subtitle">World Capitals Crossword (10x10)</p>
         </div>
 
         <div class="buttons-container">
@@ -264,7 +350,40 @@
     <!-- How to Play Popup -->
     <div class="popup-overlay" id="howToPopup">
         <div class="popup-content">
-            <img src="how_to_play.png" alt="How to Play Instructions" class="how-to-play-img" id="howToPlayImg">
+            <div class="how-to-title-row">
+                <div class="how-to-title-box">H</div>
+                <div class="how-to-title-box">T</div>
+                <div class="how-to-title-box">P</div>
+                <span class="how-to-title-text">lay</span>
+            </div>
+            <div class="how-to-step">
+                <div class="how-to-step-num">1</div>
+                <span class="how-to-step-text">Type the capital city names in the crossword puzzle grid</span>
+            </div>
+            <div class="how-to-grid-demo">
+                <div class="how-to-grid-row">
+                    <div class="how-to-grid-cell"></div>
+                    <div class="how-to-grid-cell">P</div>
+                    <div class="how-to-grid-cell"></div>
+                </div>
+                <div class="how-to-grid-row">
+                    <div class="how-to-grid-cell">A</div>
+                    <div class="how-to-grid-cell">R</div>
+                    <div class="how-to-grid-cell">I</div>
+                </div>
+                <div class="how-to-grid-row">
+                    <div class="how-to-grid-cell"></div>
+                    <div class="how-to-grid-cell">S</div>
+                    <div class="how-to-grid-cell"></div>
+                </div>
+            </div>
+            <div class="how-to-step">
+                <div class="how-to-step-num">2</div>
+                <span class="how-to-step-text">Click 'CHECK' to verify your answer</span>
+            </div>
+            <div style="display:flex;justify-content:center;align-items:center;margin-bottom:12px;">
+                <button class="how-to-check-btn">CHECK</button>
+            </div>
             <button class="back-btn" id="backBtn">BACK</button>
         </div>
     </div>
@@ -449,5 +568,8 @@
         howToPopup.addEventListener('click', (e) => { if (e.target === howToPopup) closePopup(); });
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && howToPopup.classList.contains('active')) closePopup(); });
     </script>
+    <!-- IMPORTANT: Analytics must load FIRST -->
+    <script src="AnalyticsManager.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
