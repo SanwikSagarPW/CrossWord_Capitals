@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
+    // === Analytics Integration ===
+    const analytics = new AnalyticsManager();
+    const GAME_ID = 'crossword_puzzle';
+    const SESSION_ID = 'session_' + Date.now();
+    analytics.initialize(GAME_ID, SESSION_ID);
+    let levelStartTime = 0;
+    let checkAttempts = 0;
+    let currentLevelId = 'level_1';
+
     // DOM Elements
     const gridElement = document.getElementById('crossword-grid');
     const acrossCluesElement = document.getElementById('across-clues');
@@ -39,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(error) {
             console.error("Failed to start game:", error);
             gridElement.innerHTML = `<p style="color: var(--error-color);">Could not load puzzle. Please check puzzle.json and refresh.</p>`;
+            // --- Analytics: Start Level ---
+            levelStartTime = Date.now();
+            checkAttempts = 0;
         }
     }
 
@@ -278,17 +291,43 @@ document.addEventListener('DOMContentLoaded', () => {
     function submitPuzzle() {
         const inputs = document.querySelectorAll('.cell-input');
         let allCorrect = true;
-        
+        // --- Analytics: Track Check Attempt as Task ---
+        checkAttempts++;
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let emptyCount = 0;
         inputs.forEach(input => {
             const enteredValue = input.value.toUpperCase();
             const correctValue = input.dataset.answer;
-            if (enteredValue === correctValue) {
+            if (enteredValue === '') {
+                emptyCount++;
+            } else if (enteredValue === correctValue) {
+                correctCount++;
                 input.classList.add('correct');
             } else {
+                incorrectCount++;
                 allCorrect = false;
                 input.classList.add('incorrect-flash');
             }
         });
+
+        const timeSinceStart = Date.now() - levelStartTime;
+        const accuracy = (correctCount + incorrectCount + emptyCount) > 0 ? (correctCount / (correctCount + incorrectCount + emptyCount)) * 100 : 0;
+        analytics.recordTask(
+            currentLevelId,
+            'check_attempt_' + checkAttempts,
+            `Check Puzzle Attempt #${checkAttempts}`,
+            'all_correct',
+            allCorrect ? 'all_correct' : 'has_errors',
+            timeSinceStart,
+            allCorrect ? 50 : 10
+        );
+        analytics.addRawMetric('check_attempts', checkAttempts);
+        analytics.addRawMetric('correct_items', correctCount);
+        analytics.addRawMetric('incorrect_items', incorrectCount);
+        analytics.addRawMetric('empty_items', emptyCount);
+        analytics.addRawMetric('accuracy_percent', accuracy.toFixed(1));
+        analytics.addRawMetric('time_elapsed_seconds', Math.floor(timeSinceStart / 1000));
 
         if (allCorrect) {
             clearInterval(timerInterval);
@@ -304,6 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
             scoreDisplayElement.textContent = finalScore;
             inputs.forEach(input => input.readOnly = true);
             successOverlay.classList.remove('hidden');
+            // --- Analytics: End Level and Submit Report ---
+            analytics.endLevel(currentLevelId, true, timeTaken * 1000, finalScore);
+            analytics.submitReport();
         } else {
             setTimeout(() => {
                 inputs.forEach(input => {
@@ -349,6 +391,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (homeButton) homeButton.addEventListener('click', () => { window.location.href = 'index.html'; });
     if (incompleteOkButton) incompleteOkButton.addEventListener('click', () => incompleteOverlay.classList.add('hidden'));
     
+    // --- Track Incomplete Sessions on Unload ---
+    window.addEventListener('beforeunload', () => {
+        if (currentLevelId && levelStartTime > 0) {
+            const timeTaken = Date.now() - levelStartTime;
+            analytics.endLevel(currentLevelId, false, timeTaken, 0);
+            analytics.submitReport();
+        }
+    });
+
     // Start Game
     startGame();
 });
