@@ -401,5 +401,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start Game
     startGame();
-}
-);
+});
