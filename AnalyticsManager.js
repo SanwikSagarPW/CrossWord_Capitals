@@ -1,5 +1,5 @@
 /**
- * AnalyticsManager - Tracks game analytics and submits to React Native WebView
+ * AnalyticsManager - Tracks game analytics and submits data
  */
 class AnalyticsManager {
   constructor() {
@@ -31,11 +31,6 @@ class AnalyticsManager {
     return AnalyticsManager.instance;
   }
   
-  /**
-   * Initialize the analytics session
-   * @param {string} gameId - Unique game identifier
-   * @param {string} sessionName - Session/player identifier
-   */
   initialize(gameId, sessionName) {
     this._gameId = gameId;
     this._sessionName = sessionName;
@@ -50,11 +45,6 @@ class AnalyticsManager {
     console.log(`[Analytics] Initialized for: ${gameId}`);
   }
   
-  /**
-   * Add a generic metric (FPS, Latency, etc)
-   * @param {string} key - Metric name
-   * @param {string|number} value - Metric value
-   */
   addRawMetric(key, value) {
     if (!this._isInitialized) {
       console.warn('[Analytics] Not initialized');
@@ -65,10 +55,6 @@ class AnalyticsManager {
     console.log(`[Analytics] Metric added: ${key} = ${value}`);
   }
   
-  /**
-   * Start tracking a new level
-   * @param {string} levelId - Unique level identifier
-   */
   startLevel(levelId) {
     if (!this._isInitialized) {
       console.warn('[Analytics] Not initialized');
@@ -88,13 +74,6 @@ class AnalyticsManager {
     console.log(`[Analytics] Level started: ${levelId}`);
   }
   
-  /**
-   * Complete a level and update totals
-   * @param {string} levelId - Level identifier
-   * @param {boolean} successful - Whether level was completed successfully
-   * @param {number} timeTakenMs - Time taken in milliseconds
-   * @param {number} xp - XP earned for this level
-   */
   endLevel(levelId, successful, timeTakenMs, xp) {
     const level = this._getLevelById(levelId);
     
@@ -103,7 +82,6 @@ class AnalyticsManager {
       level.timeTaken = timeTakenMs;
       level.xpEarned = xp;
       
-      // Update global session totals
       this._reportData.xpEarnedTotal += xp;
       
       console.log(`[Analytics] Level completed! { levelId: "${levelId}", success: ${successful}, time: ${(timeTakenMs/1000).toFixed(2)}s, xp: ${xp} }`);
@@ -112,16 +90,6 @@ class AnalyticsManager {
     }
   }
   
-  /**
-   * Record a specific user action/task within a level
-   * @param {string} levelId - Level identifier
-   * @param {string} taskId - Task identifier
-   * @param {string} question - Question text
-   * @param {string} correctChoice - Correct answer
-   * @param {string} choiceMade - User's answer
-   * @param {number} timeMs - Time taken in milliseconds
-   * @param {number} xp - XP earned for this task
-   */
   recordTask(levelId, taskId, question, correctChoice, choiceMade, timeMs, xp) {
     const level = this._getLevelById(levelId);
     
@@ -145,25 +113,21 @@ class AnalyticsManager {
     }
   }
   
-  /**
-   * Submit the final report to React Native WebView
-   */
   submitReport() {
     if (!this._isInitialized) {
       console.error('[Analytics] Attempted to submit without initialization.');
       return;
     }
-    // Build canonical payload
-    const payload = JSON.parse(JSON.stringify(this._reportData));
-    // ensure canonical fields expected by hosts
-    if (!payload.sessionId) payload.sessionId = (Date.now() + '-' + Math.random().toString(36));
-    if (!payload.timestamp) payload.timestamp = new Date().toISOString();
-    // map existing fields to common names
-    payload.xpEarned = payload.xpEarned || payload.xpEarnedTotal || 0;
-    payload.xpTotal = payload.xpTotal || payload.xpEarnedTotal || 0;
-    payload.bestXp = payload.bestXp || payload.xpEarnedTotal || 0;
 
-    // Log detailed payload before sending
+    const payload = JSON.parse(JSON.stringify(this._reportData));
+    
+    if (!payload.sessionId) payload.sessionId = (Date.now() + '-' + Math.random().toString(36).substr(2, 9));
+    if (!payload.timestamp) payload.timestamp = new Date().toISOString();
+    
+    payload.xpEarned = payload.xpEarnedTotal;
+    payload.xpTotal = payload.xpEarnedTotal;
+    payload.bestXp = payload.xpEarnedTotal;
+
     console.log('═══════════════════════════════════════════════════════');
     console.log('[Analytics] REPORT SUBMITTED');
     console.log('═══════════════════════════════════════════════════════');
@@ -175,106 +139,58 @@ class AnalyticsManager {
     console.log('Full Payload:', payload);
     console.log('═══════════════════════════════════════════════════════');
 
-    // Try delivery via several bridges, best-effort. If window is not present (test/node), just return payload
-    if (typeof window === 'undefined') {
-      return payload;
-    }
+    this._sendPayload(payload);
+  }
+  
+  _sendPayload(payload) {
+    let sent = false;
 
-    // helpers for persistence/queueing
-    const LS_KEY = 'ignite_pending_sessions_jsplugin';
-    function savePending(p) {
-      try {
-        const list = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-        list.push(p);
-        localStorage.setItem(LS_KEY, JSON.stringify(list));
-      } catch (e) { /* ignore */ }
-    }
-
-    function trySend(p) {
-      let sent = false;
-      console.log('[Analytics] Attempting to send payload via available bridges...');
-      
-      // site-local bridge
-      try {
-        if (window.myJsAnalytics && typeof window.myJsAnalytics.trackGameSession === 'function') {
-          console.log('[Analytics] Sending via window.myJsAnalytics.trackGameSession');
-          window.myJsAnalytics.trackGameSession(p);
-          sent = true;
-        }
-      } catch (e) { console.log('[Analytics] myJsAnalytics not available'); }
-
-      // React Native WebView
-      try {
-        if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
-          console.log('[Analytics] Sending via ReactNativeWebView.postMessage');
-          window.ReactNativeWebView.postMessage(JSON.stringify(p));
-          sent = true;
-        }
-      } catch (e) { console.log('[Analytics] ReactNativeWebView not available'); }
-
-      // parent/frame
-      try {
-        const target = window.__GodotAnalyticsParentOrigin || '*';
-        console.log('[Analytics] Sending via window.parent.postMessage');
-        window.parent.postMessage(p, target);
-        sent = true;
-      } catch (e) { console.log('[Analytics] parent.postMessage not available'); }
-
-      // debug fallback - console
-      if (!sent) {
-        console.warn('[Analytics] No delivery bridge available - logging payload to console:');
-        console.log(JSON.stringify(p, null, 2));
-      } else {
-        console.log('[Analytics] Payload successfully sent via bridge(s)');
-      }
-
-      return sent;
-    }
-
-    function flushPending() {
-      try {
-        const list = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-        if (!list || !list.length) return;
-        list.forEach(function (p) { trySend(p); });
-        localStorage.removeItem(LS_KEY);
-      } catch (e) { /* ignore */ }
-    }
-
-    // attempt send
-    const ok = trySend(payload);
-    if (!ok) savePending(payload);
-
-    // ensure pending flush is registered once
     try {
-      if (typeof window !== 'undefined') {
-        window.addEventListener && window.addEventListener('online', flushPending);
-        window.addEventListener && window.addEventListener('load', flushPending);
-        // listen for handshake message to set parent origin
-        window.addEventListener && window.addEventListener('message', function (ev) {
-          try {
-            const msg = (typeof ev.data === 'string') ? JSON.parse(ev.data) : ev.data;
-            if (msg && msg.type === 'ANALYTICS_CONFIG' && msg.parentOrigin) {
-              window.__GodotAnalyticsParentOrigin = msg.parentOrigin;
-            }
-          } catch (e) { /* ignore */ }
-        });
-        // try flushing shortly after submit to catch same-page parent
-        setTimeout(flushPending, 2000);
+      if (window.myJsAnalytics && typeof window.myJsAnalytics.trackGameSession === 'function') {
+        console.log('[Analytics] Sending via window.myJsAnalytics');
+        window.myJsAnalytics.trackGameSession(payload);
+        sent = true;
       }
-    } catch (e) { /* ignore */ }
+    } catch (e) {}
+
+    try {
+      if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
+        console.log('[Analytics] Sending via ReactNativeWebView');
+        window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+        sent = true;
+      }
+    } catch (e) {}
+
+    try {
+      const target = window.__GodotAnalyticsParentOrigin || '*';
+      console.log('[Analytics] Sending via window.parent.postMessage');
+      window.parent.postMessage(payload, target);
+      sent = true;
+    } catch (e) {}
+
+    if (!sent) {
+      console.warn('[Analytics] No bridge available - logging to console:');
+      console.log(JSON.stringify(payload, null, 2));
+    } else {
+      console.log('[Analytics] ✓ Payload sent successfully');
+    }
+
+    this._savePending(payload);
+  }
+
+  _savePending(payload) {
+    try {
+      const LS_KEY = 'ignite_pending_sessions_jsplugin';
+      const list = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+      list.push(payload);
+      localStorage.setItem(LS_KEY, JSON.stringify(list));
+    } catch (e) {}
   }
   
-  /**
-   * Get current report data (for debugging)
-   * @returns {Object} Current analytics data
-   */
   getReportData() {
-    return JSON.parse(JSON.stringify(this._reportData)); // Deep clone
+    return JSON.parse(JSON.stringify(this._reportData));
   }
   
-  /**
-   * Reset analytics data (useful for new sessions)
-   */
   reset() {
     this._reportData.xpEarnedTotal = 0;
     this._reportData.rawData = [];
@@ -282,14 +198,6 @@ class AnalyticsManager {
     console.log('[Analytics] Data reset');
   }
   
-  // --- Internal Helpers ---
-  
-  /**
-   * Find level by ID (searches backwards for most recent)
-   * @private
-   * @param {string} levelId
-   * @returns {Object|null}
-   */
   _getLevelById(levelId) {
     const levels = this._reportData.diagnostics.levels;
     for (let i = levels.length - 1; i >= 0; i--) {
@@ -301,12 +209,10 @@ class AnalyticsManager {
   }
 }
 
-// Make it globally available for browser script tags
 if (typeof window !== 'undefined') {
   window.AnalyticsManager = AnalyticsManager;
 }
 
-// Also support ES6 modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AnalyticsManager;
 }
