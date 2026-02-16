@@ -62,6 +62,7 @@ class AnalyticsManager {
     }
     
     this._reportData.rawData.push({ key, value: String(value) });
+    console.log(`[Analytics] Metric added: ${key} = ${value}`);
   }
   
   /**
@@ -84,6 +85,7 @@ class AnalyticsManager {
     };
     
     this._reportData.diagnostics.levels.push(levelEntry);
+    console.log(`[Analytics] Level started: ${levelId}`);
   }
   
   /**
@@ -103,6 +105,8 @@ class AnalyticsManager {
       
       // Update global session totals
       this._reportData.xpEarnedTotal += xp;
+      
+      console.log(`[Analytics] Level completed! { levelId: "${levelId}", success: ${successful}, time: ${(timeTakenMs/1000).toFixed(2)}s, xp: ${xp} }`);
     } else {
       console.warn(`[Analytics] End Level called for unknown level: ${levelId}`);
     }
@@ -135,6 +139,7 @@ class AnalyticsManager {
       };
       
       level.tasks.push(taskData);
+      console.log(`[Analytics] Task recorded: ${question} - ${isSuccessful ? '✓ Success' : '✗ Failed'} (XP: ${xp})`);
     } else {
       console.warn(`[Analytics] Record Task called for unknown level: ${levelId}`);
     }
@@ -157,6 +162,18 @@ class AnalyticsManager {
     payload.xpEarned = payload.xpEarned || payload.xpEarnedTotal || 0;
     payload.xpTotal = payload.xpTotal || payload.xpEarnedTotal || 0;
     payload.bestXp = payload.bestXp || payload.xpEarnedTotal || 0;
+
+    // Log detailed payload before sending
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[Analytics] REPORT SUBMITTED');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('Game ID:', payload.gameId);
+    console.log('Session:', payload.sessionId);
+    console.log('Total XP:', payload.xpEarnedTotal);
+    console.log('Levels Completed:', payload.diagnostics.levels.length);
+    console.log('Raw Metrics:', payload.rawData);
+    console.log('Full Payload:', payload);
+    console.log('═══════════════════════════════════════════════════════');
 
     // Try delivery via several bridges, best-effort. If window is not present (test/node), just return payload
     if (typeof window === 'undefined') {

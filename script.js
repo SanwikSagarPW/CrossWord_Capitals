@@ -345,6 +345,9 @@ document.addEventListener('DOMContentLoaded', () => {
             inputs.forEach(input => input.readOnly = true);
             successOverlay.classList.remove('hidden');
             // --- Analytics: End Level and Submit Report ---
+            analytics.addRawMetric('final_score', finalScore);
+            analytics.addRawMetric('completion_time_seconds', timeTaken);
+            analytics.addRawMetric('time_remaining_seconds', timeRemaining);
             analytics.endLevel(currentLevelId, true, timeTaken * 1000, finalScore);
             analytics.submitReport();
         } else {
