@@ -604,8 +604,5 @@
         if (howToPopup) howToPopup.addEventListener('click', (e) => { if (e.target === howToPopup) closePopup(); });
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && howToPopup && howToPopup.classList.contains('active')) closePopup(); });
     </script>
-    <!-- IMPORTANT: Analytics must load FIRST -->
-    <script src="AnalyticsManager.js"></script>
-    <script src="script.js"></script>
 </body>
 </html>
