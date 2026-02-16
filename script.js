@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-document.addEventListener('DOMContentLoaded', () => {
     // === Analytics Integration ===
     const analytics = new AnalyticsManager();
     const GAME_ID = 'crossword_puzzle';
@@ -402,4 +401,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start Game
     startGame();
-});
+}
+);
