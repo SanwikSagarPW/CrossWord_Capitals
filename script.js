@@ -45,12 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             currentPuzzleData = await response.json();
             initializeGame();
-        } catch(error) {
-            console.error("Failed to start game:", error);
-            gridElement.innerHTML = `<p style="color: var(--error-color);">Could not load puzzle. Please check puzzle.json and refresh.</p>`;
             // --- Analytics: Start Level ---
             levelStartTime = Date.now();
             checkAttempts = 0;
+            currentLevelId = 'level_1';
+            analytics.startLevel(currentLevelId);
+        } catch(error) {
+            console.error("Failed to start game:", error);
+            gridElement.innerHTML = `<p style="color: var(--error-color);">Could not load puzzle. Please check puzzle.json and refresh.</p>`;
         }
     }
 
