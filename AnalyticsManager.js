@@ -230,10 +230,6 @@ class AnalyticsManager {
 
       return sent;
     }
-      }
-
-      return sent;
-    }
 
     function flushPending() {
       try {
