@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // === ANALYTICS INTEGRATION (Single Puzzle) ===
+    const analytics = new AnalyticsManager();
+    const sessionId = 'session_' + Date.now();
+    analytics.initialize('crossword_puzzle', sessionId);
+    const levelId = 'main_puzzle'; // Fixed ID for single puzzle
+    let levelStartTime = 0;
+    let checkAttempts = 0;
     // DOM Elements
     const gridElement = document.getElementById('crossword-grid');
     const acrossCluesElement = document.getElementById('across-clues');
@@ -36,9 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             currentPuzzleData = await response.json();
             initializeGame();
+            // --- Analytics: Start Level (Single Puzzle) ---
+            analytics.startLevel(levelId);
+            levelStartTime = Date.now();
+            checkAttempts = 0;
+            console.log('[Analytics] Level started:', levelId);
         } catch(error) {
             console.error("Failed to start game:", error);
-            gridElement.innerHTML = `<p style="color: var(--error-color);">Could not load puzzle. Please check puzzle.json and refresh.</p>`;
+            gridElement.innerHTML = `<p style=\"color: var(--error-color);\">Could not load puzzle. Please check puzzle.json and refresh.</p>`;
         }
     }
 
@@ -267,18 +279,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PUZZLE CHECKING & SUBMISSION ---
 
     function checkCompletion() {
-        if ([...document.querySelectorAll('.cell-input')].every(input => input.value.trim() !== '')) {
+        checkAttempts++;
+        const inputs = document.querySelectorAll('.cell-input');
+        let correct = 0, incorrect = 0, empty = 0;
+        inputs.forEach(input => {
+            const enteredValue = input.value.toUpperCase();
+            const correctValue = input.dataset.answer;
+            if (!enteredValue) empty++;
+            else if (enteredValue === correctValue) correct++;
+            else incorrect++;
+        });
+        const totalItems = correct + incorrect + empty;
+        const accuracy = totalItems > 0 ? (correct / totalItems * 100).toFixed(1) : 0;
+        const allCorrect = incorrect === 0 && empty === 0;
+        // --- Analytics: Record Task (Check Attempt) ---
+        analytics.recordTask(
+            levelId,
+            'check_attempt_' + checkAttempts,
+            'Check Attempt #' + checkAttempts,
+            'all_correct',
+            allCorrect ? 'all_correct' : 'has_errors',
+            Date.now() - levelStartTime,
+            allCorrect ? 50 : 10
+        );
+        analytics.addRawMetric('check_attempts', checkAttempts);
+        analytics.addRawMetric('accuracy_percent', accuracy);
+        analytics.addRawMetric('correct_items', correct);
+        analytics.addRawMetric('incorrect_items', incorrect);
+        analytics.addRawMetric('empty_items', empty);
+        console.log('[Analytics] Check attempt #' + checkAttempts, { correct, incorrect, empty, accuracy: accuracy + '%' });
+        console.log('[Analytics] Metrics tracked:', analytics.getReportData().rawData);
+        if ([...inputs].every(input => input.value.trim() !== '')) {
             checkButton.classList.add('hidden');
             submitButton.classList.remove('hidden');
         } else {
             incompleteOverlay.classList.remove('hidden');
+        }
+        // If all correct, auto-complete
+        if (allCorrect) {
+            completePuzzle(true);
         }
     }
 
     function submitPuzzle() {
         const inputs = document.querySelectorAll('.cell-input');
         let allCorrect = true;
-        
         inputs.forEach(input => {
             const enteredValue = input.value.toUpperCase();
             const correctValue = input.dataset.answer;
@@ -289,21 +334,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.classList.add('incorrect-flash');
             }
         });
-
         if (allCorrect) {
-            clearInterval(timerInterval);
-            const timeTaken = GAME_DURATION - timeRemaining;
-            let finalScore = 50; // Default score
-            if (timeTaken <= 240) { // less than 4 mins
-                finalScore = 200;
-            } else if (timeTaken <= 360) { // less than 6 mins
-                finalScore = 150;
-            } else if (timeTaken <= 480) { // less than 8 mins
-                finalScore = 100;
-            }
-            scoreDisplayElement.textContent = finalScore;
-            inputs.forEach(input => input.readOnly = true);
-            successOverlay.classList.remove('hidden');
+            completePuzzle(true);
         } else {
             setTimeout(() => {
                 inputs.forEach(input => {
@@ -314,6 +346,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }, 2000); // Remove flash after 2 seconds
         }
+    }
+
+    // --- Analytics: Complete Puzzle ---
+    function completePuzzle(success) {
+        clearInterval(timerInterval);
+        const timeTaken = Date.now() - levelStartTime;
+        // XP calculation (example: base + time/attempt bonuses)
+        let totalXP = 100;
+        const baseXP = 100;
+        const timeBonus = Math.max(0, 50 - Math.floor(timeTaken / 10000));
+        const attemptBonus = Math.max(0, 50 - (checkAttempts - 1) * 10);
+        totalXP = baseXP + timeBonus + attemptBonus;
+        scoreDisplayElement.textContent = totalXP;
+        document.querySelectorAll('.cell-input').forEach(input => input.readOnly = true);
+        successOverlay.classList.remove('hidden');
+        analytics.endLevel(levelId, success, timeTaken, totalXP);
+        analytics.addRawMetric('final_score', totalXP);
+        analytics.addRawMetric('time_taken_sec', Math.floor(timeTaken / 1000));
+        console.log('[Analytics] Level completed!', {
+            timeTaken: (timeTaken / 1000).toFixed(2) + 's',
+            baseXP,
+            timeBonus,
+            attemptBonus,
+            totalXP
+        });
+        console.log('[Analytics] Full Report:', analytics.getReportData());
+        analytics.submitReport();
     }
 
     // --- SECRET CODES & EVENT LISTENERS ---
@@ -351,4 +410,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Start Game
     startGame();
+
+    // --- Analytics: Track Incomplete Sessions (abandon/close) ---
+    window.addEventListener('beforeunload', () => {
+        if (levelStartTime > 0) {
+            const level = analytics._getLevelById(levelId);
+            if (level && !level.successful) {
+                const timeTaken = Date.now() - levelStartTime;
+                analytics.endLevel(levelId, false, timeTaken, 0);
+                analytics.submitReport();
+                console.log('[Analytics] Session ended (incomplete)');
+            }
+        }
+    });
 });
