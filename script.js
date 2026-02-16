@@ -50,6 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
             checkAttempts = 0;
             currentLevelId = 'level_1';
             analytics.startLevel(currentLevelId);
+            
+            // Debug: Make analytics accessible in console for testing
+            window.debugAnalytics = analytics;
+            console.log('[Game] Analytics is accessible via window.debugAnalytics');
         } catch(error) {
             console.error("Failed to start game:", error);
             gridElement.innerHTML = `<p style="color: var(--error-color);">Could not load puzzle. Please check puzzle.json and refresh.</p>`;
@@ -290,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function submitPuzzle() {
+        console.log('[Game] Submit Puzzle button clicked');
         const inputs = document.querySelectorAll('.cell-input');
         let allCorrect = true;
         // --- Analytics: Track Check Attempt as Task ---
@@ -314,6 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const timeSinceStart = Date.now() - levelStartTime;
         const accuracy = (correctCount + incorrectCount + emptyCount) > 0 ? (correctCount / (correctCount + incorrectCount + emptyCount)) * 100 : 0;
+        
+        console.log(`[Game] Validation results - Correct: ${correctCount}, Incorrect: ${incorrectCount}, Empty: ${emptyCount}, All Correct: ${allCorrect}`);
+        
         analytics.recordTask(
             currentLevelId,
             'check_attempt_' + checkAttempts,
@@ -331,6 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         analytics.addRawMetric('time_elapsed_seconds', Math.floor(timeSinceStart / 1000));
 
         if (allCorrect) {
+            console.log('[Game] All answers correct! Calculating score...');
             clearInterval(timerInterval);
             const timeTaken = GAME_DURATION - timeRemaining;
             let finalScore = 50; // Default score
@@ -341,16 +350,20 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (timeTaken <= 480) { // less than 8 mins
                 finalScore = 100;
             }
+            console.log(`[Game] Final score: ${finalScore}, Time taken: ${timeTaken}s`);
             scoreDisplayElement.textContent = finalScore;
             inputs.forEach(input => input.readOnly = true);
             successOverlay.classList.remove('hidden');
             // --- Analytics: End Level and Submit Report ---
+            console.log('[Game] Submitting analytics report...');
             analytics.addRawMetric('final_score', finalScore);
             analytics.addRawMetric('completion_time_seconds', timeTaken);
             analytics.addRawMetric('time_remaining_seconds', timeRemaining);
             analytics.endLevel(currentLevelId, true, timeTaken * 1000, finalScore);
             analytics.submitReport();
+            console.log('[Game] Analytics report submitted');
         } else {
+            console.log(`[Game] Incorrect answers found. Correct: ${correctCount}, Incorrect: ${incorrectCount}`);
             setTimeout(() => {
                 inputs.forEach(input => {
                     input.classList.remove('incorrect-flash');

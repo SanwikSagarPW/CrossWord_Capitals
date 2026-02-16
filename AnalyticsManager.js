@@ -192,32 +192,44 @@ class AnalyticsManager {
 
     function trySend(p) {
       let sent = false;
+      console.log('[Analytics] Attempting to send payload via available bridges...');
+      
       // site-local bridge
       try {
         if (window.myJsAnalytics && typeof window.myJsAnalytics.trackGameSession === 'function') {
+          console.log('[Analytics] Sending via window.myJsAnalytics.trackGameSession');
           window.myJsAnalytics.trackGameSession(p);
           sent = true;
         }
-      } catch (e) { /* continue */ }
+      } catch (e) { console.log('[Analytics] myJsAnalytics not available'); }
 
       // React Native WebView
       try {
         if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
+          console.log('[Analytics] Sending via ReactNativeWebView.postMessage');
           window.ReactNativeWebView.postMessage(JSON.stringify(p));
           sent = true;
         }
-      } catch (e) { /* continue */ }
+      } catch (e) { console.log('[Analytics] ReactNativeWebView not available'); }
 
       // parent/frame
       try {
         const target = window.__GodotAnalyticsParentOrigin || '*';
+        console.log('[Analytics] Sending via window.parent.postMessage');
         window.parent.postMessage(p, target);
         sent = true;
-      } catch (e) { /* continue */ }
+      } catch (e) { console.log('[Analytics] parent.postMessage not available'); }
 
       // debug fallback - console
       if (!sent) {
-        try { console.log('Payload:' + JSON.stringify(p)); } catch (e) { /* swallow */ }
+        console.warn('[Analytics] No delivery bridge available - logging payload to console:');
+        console.log(JSON.stringify(p, null, 2));
+      } else {
+        console.log('[Analytics] Payload successfully sent via bridge(s)');
+      }
+
+      return sent;
+    }
       }
 
       return sent;
