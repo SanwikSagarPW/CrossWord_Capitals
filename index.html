@@ -590,7 +590,18 @@
 
         // Event Listeners
         // Removed: howToPlayImg.addEventListener('error', function() { this.style.display = 'none'; });
-        playBtn.addEventListener('click', () => { window.location.href = 'game.html'; });
+        playBtn.addEventListener('click', async () => {
+            try {
+                const resp = await fetch('game.html');
+                if (!resp.ok) throw new Error('Network response not ok');
+                const html = await resp.text();
+                document.open();
+                document.write(html);
+                document.close();
+            } catch (e) {
+                window.location.href = 'game.html';
+            }
+        });
         howToBtn.addEventListener('click', () => {
             howToPopup.classList.add('active');
             document.body.style.overflow = 'hidden';
