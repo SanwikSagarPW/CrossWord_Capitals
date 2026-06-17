@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'all_correct',
             allCorrect ? 'all_correct' : 'has_errors',
             timeSinceStart,
-            allCorrect ? 50 : 10
+            0
         );
         analytics.addRawMetric('check_attempts', checkAttempts);
         analytics.addRawMetric('correct_items', correctCount);
@@ -341,25 +341,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (allCorrect) {
             console.log('[Game] All answers correct! Calculating score...');
             clearInterval(timerInterval);
-            const timeTaken = GAME_DURATION - timeRemaining;
-            let finalScore = 50; // Default score
-            if (timeTaken <= 240) { // less than 4 mins
-                finalScore = 200;
-            } else if (timeTaken <= 360) { // less than 6 mins
-                finalScore = 150;
-            } else if (timeTaken <= 480) { // less than 8 mins
-                finalScore = 100;
-            }
-            console.log(`[Game] Final score: ${finalScore}, Time taken: ${timeTaken}s`);
+            const timeTaken = Date.now() - levelStartTime;
+            const baseXP = 100;
+            const timeBonus = Math.max(0, 50 - Math.floor(timeTaken / 10000));
+            const attemptBonus = Math.max(0, 50 - (checkAttempts - 1) * 10);
+            const finalScore = baseXP + timeBonus + attemptBonus;
+            console.log(`[Game] Final score: ${finalScore} (base: ${baseXP}, timeBonus: ${timeBonus}, attemptBonus: ${attemptBonus})`);
             scoreDisplayElement.textContent = finalScore;
             inputs.forEach(input => input.readOnly = true);
             successOverlay.classList.remove('hidden');
             // --- Analytics: End Level and Submit Report ---
             console.log('[Game] Submitting analytics report...');
             analytics.addRawMetric('final_score', finalScore);
-            analytics.addRawMetric('completion_time_seconds', timeTaken);
-            analytics.addRawMetric('time_remaining_seconds', timeRemaining);
-            analytics.endLevel(currentLevelId, true, timeTaken * 1000, finalScore);
+            analytics.addRawMetric('base_xp', baseXP);
+            analytics.addRawMetric('time_bonus', timeBonus);
+            analytics.addRawMetric('attempt_bonus', attemptBonus);
+            analytics.endLevel(currentLevelId, true, timeTaken, finalScore);
             analytics.submitReport();
             console.log('[Game] Analytics report submitted');
         } else {
