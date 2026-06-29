@@ -126,7 +126,12 @@ class AnalyticsManager {
     
     payload.xpEarned = payload.xpEarnedTotal;
     payload.xpTotal = payload.xpEarnedTotal;
-    payload.bestXp = payload.xpEarnedTotal;
+    const _bestXpCur = payload.xpEarnedTotal || 0;
+    const _bestXpKey = 'bestXp_' + (payload.gameId || '');
+    let _bestXpPrev = 0;
+    try { _bestXpPrev = parseInt(localStorage.getItem(_bestXpKey) || '0', 10) || 0; } catch (_e) {}
+    payload.bestXp = Math.max(_bestXpCur, _bestXpPrev);
+    if (_bestXpCur > _bestXpPrev) { try { localStorage.setItem(_bestXpKey, String(_bestXpCur)); } catch (_e) {} }
 
     console.log('═══════════════════════════════════════════════════════');
     console.log('[Analytics] REPORT SUBMITTED');
